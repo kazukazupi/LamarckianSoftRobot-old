@@ -1,7 +1,11 @@
 import argparse
 
 from utils.ga_utils import load
-from ga.reproduction import get_mass_point_in_order, get_over_head
+from ga.reproduction import mutate_structure
+from ga.inherit import inherit_controller_mutation
+from ppo.envs import make_vec_envs
+from utils.config import Config
+import evogym.envs
 
 def main() -> None:
     
@@ -19,10 +23,26 @@ def main() -> None:
 
     (body, connections), (actor_critic, obs_rms) = load(exp_dir, generation, id)
 
-    overhead = get_over_head(args.env_name)
+    mutated_structure = mutate_structure(body)
 
-    mpio = get_mass_point_in_order(body)
-    assert overhead + 2 * len(mpio) == actor_critic.state_dict()['base.actor.0.weight'].shape[1]
+    envs = make_vec_envs(
+        env_name=Config.env_name,
+        robot_structure=mutated_structure,
+        seed=1000,
+        num_processes=1,
+        gamma=None,
+        log_dir=None,
+        device='cpu',
+        allow_early_resets=False
+    )
+
+    inherit_controller_mutation(
+        parent_body=body,
+        parent_actor_critic=actor_critic,
+        child_body=mutated_structure[0],
+        child_observation_space_shape=envs.observation_space.shape,
+        child_action_space=envs.action_space
+    )
     
 
 if __name__ == "__main__":
