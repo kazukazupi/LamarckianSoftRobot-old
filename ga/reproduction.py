@@ -1,52 +1,88 @@
 import numpy as np
 
 def get_over_head(env_name:str):
-    if env_name == "BridgeWalker-v0":
+    if env_name in ["BridgeWalker-v0", 'ObstacleTraverser-v0', 'ObstacleTraverser-v1']:
             return 3
+    elif env_name in ['Walker-v0', 'BidirectionalWalker-v0', 'Carrier-v0', 'Carrier-v1', 'Pusher-v0']:
+        return 2
     else:
         raise NotImplementedError(f'function "get_over_head" does not support the environment {env_name}.')
 
-def is_contained(
-        new_coordinate: tuple,
-        new_voxel_id: int,
-        connections: np.ndarray,
-        mass_point_in_order: list
-    ) -> bool:
-
-    is_connected = lambda a, b: True if [min(a, b), max(a, b)] in connections.T else False
-
-    for coordinate, voxel_id in mass_point_in_order:
-
-        # case that "mass_point_in_order" already contains a mass point
-        # whose coordinate is the same as "new_coordinate"
-        if new_coordinate == coordinate:
-            
-            if is_connected(new_voxel_id, voxel_id):
-                return True
-
-            # the case that these mass points are different 
-            # although they have the same coordinates.
-            else: continue
-        
+def get_over_tail(env_name:str):
+    if env_name in ['Walker-v0', 'BridgeWalker-v0']:
+            return 0
+    elif env_name in ['BidirectionalWalker-v0']:
+        return 3
+    elif env_name in ['Carrier-v0', 'Carrier-v1', 'Pusher-v0']:
+        return 4
+    elif env_name in ['ObstacleTraverser-v0', 'ObstacleTraverser-v1']:
+        return 11
     else:
-        return False
+        raise NotImplementedError(f'function "get_over_tail" does not support the environment {env_name}.')
 
 
 # Return the coordinates of the mass point in order from top-left to bottom-right.
-def get_mass_point_in_order(body: np.ndarray, connections: np.ndarray) -> list:
+def get_mass_point_in_order(body: np.ndarray) -> list:
     
-    body = (body != 0)
-    (H, W) = body.shape
+    contour = (body != 0)
+    (H, W) = contour.shape
 
     mass_point_in_order = []
-    voxel_id = 0
 
     for h in range(H):
         for w in range(W):
-            if body[h][w]:
-                for coordinate in [(h, w), (h, w+1), (h+1, w), (h+1, w+1)]:
-                    if not is_contained(coordinate, voxel_id, connections, mass_point_in_order):
-                        mass_point_in_order.append((coordinate, voxel_id))
-            voxel_id += 1
+            if contour[h][w]:
+                
+                coordinate = (h, w) # voxelの左上の質点
+                if h == 0: # 最上辺にある場合
+                    if w == 0: # 最も左上のvoxelだった場合
+                        mass_point_in_order.append(coordinate)
+                    else:
+                        if contour[h][w-1]: # 左にvoxelが存在した場合
+                            pass
+                        else:
+                            mass_point_in_order.append(coordinate)
+                else:
+                    if w == 0: # 最左辺にある場合
+                        if contour[h-1][w]: # 真上にvoxelが存在した場合
+                            pass
+                        else:
+                            mass_point_in_order.append(coordinate)
+                    else:
+                        if contour[h-1][w]: # 真上にvoxelが存在した場合
+                            pass
+                        elif contour[h][w-1]: # 真左にvoxelが存在した場合
+                            pass
+                        else:
+                            mass_point_in_order.append(coordinate)
+                
+                coordinate = (h, w+1) # voxelの右上の質点
+                if h == 0: # 最上辺にある場合
+                    mass_point_in_order.append(coordinate)
+                else:
+                    if w == W - 1: # 最右辺にある場合 
+                        if contour[h-1][w]: # 真上にvoxelが存在する場合
+                            pass
+                        else:
+                            mass_point_in_order.append(coordinate)
+                    else:
+                        if contour[h-1][w]: # 真上にvoxelが存在する場合
+                            pass
+                        elif contour[h][w+1] and contour[h-1][w+1]: # 右上のvoxelと繋がっている場合
+                            pass
+                        else:
+                            mass_point_in_order.append(coordinate)
+                
+                coordinate = (h+1, w) # voxelの左下の質点
+                if w == 0: # 最左辺にある場合
+                    mass_point_in_order.append(coordinate)
+                else:
+                    if contour[h][w-1]: # 左にvoxelがある場合
+                        pass
+                    else:
+                        mass_point_in_order.append(coordinate)
+
+                coordinate = (h+1, w+1) # voxelの右下の質点
+                mass_point_in_order.append(coordinate)
 
     return mass_point_in_order

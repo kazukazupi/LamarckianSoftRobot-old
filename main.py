@@ -21,9 +21,7 @@ def main() -> None:
 
     overhead = get_over_head(args.env_name)
 
-    mpio = get_mass_point_in_order(body, connections)
-    print(len(mpio))
-    print(actor_critic.state_dict()['base.actor.0.weight'].shape[1])
+    mpio = get_mass_point_in_order(body)
     assert overhead + 2 * len(mpio) == actor_critic.state_dict()['base.actor.0.weight'].shape[1]
     
 
