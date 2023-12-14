@@ -1,3 +1,5 @@
+import argparse
 
 class Config:
-    env_name = "BridgeWalker-v0"
+
+    env_name = "BridgeWalker-v"

@@ -20,6 +20,7 @@ def main() -> None:
     exp_dir = args.exp_dir
     generation = args.generation
     id = args.id
+    Config.env_name = args.env_name
 
     (body, connections), (actor_critic, obs_rms) = load(exp_dir, generation, id)
 
@@ -35,6 +36,8 @@ def main() -> None:
         device='cpu',
         allow_early_resets=False
     )
+
+    print(obs_rms)
 
     inherit_controller_mutation(
         parent_body=body,
