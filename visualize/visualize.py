@@ -3,6 +3,7 @@ import torch
 import cv2
 import evogym.envs
 
+import os
 import sys
 sys.path.append('.')
 
@@ -19,6 +20,11 @@ def visualize(
         num_evals=1,
         envs=None
 ):
+    
+    log_dir = './visualize/log_dir'
+
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
 
     if envs is None:
         envs = make_vec_envs(env_name=Config.env_name,
@@ -26,7 +32,7 @@ def visualize(
                             seed=100,
                             num_processes=1,
                             gamma=None,
-                            log_dir=None,
+                            log_dir=log_dir,
                             device='cpu',
                             allow_early_resets=True)
     
@@ -84,7 +90,7 @@ def visualize(
             device='cpu')
         
         for info in infos:
-            if 'episode' in info.keys():
+            if 'episode' in info.keys() or 'TimeLimit.truncated' in info.keys():
                 if movie_path is not None and (best_frames is None or sum_reward > max(eval_episode_rewards)):
                     best_frames = frames
                 frames = []

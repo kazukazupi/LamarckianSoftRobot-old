@@ -52,4 +52,4 @@ def crossover(body1:np.ndarray, body2:np.ndarray) -> tuple:
 
         count -= 1
 
-    return child_body, get_full_connectivity(child_body)
+    return (child_body, get_full_connectivity(child_body)), (axis, mid)

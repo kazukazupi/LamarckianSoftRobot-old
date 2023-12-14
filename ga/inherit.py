@@ -2,8 +2,9 @@ import numpy as np
 import torch
 
 from a2c_ppo_acktr.model import Policy
-from ga.structure_analize import get_mapping_table_action, get_mapping_table_state
-
+from ga.reproduction import crossover
+from ga.structure_analize import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
+from utils.config import Config
 
 def inherit_controller_mutation(
         parent_body: np.ndarray,
@@ -72,4 +73,98 @@ def inherit_controller_mutation(
 
     child_actor_critic.load_state_dict(child_state_dict)
 
+    return child_actor_critic
+
+def inherit_controller_crossover(
+        child_body:np.ndarray,
+        axis:int,
+        mid:int,
+        parent1_body:np.ndarray,
+        parent2_body:np.ndarray,
+        parent1_actor_critic:Policy,
+        parent2_actor_critic:Policy,
+        child_observation_space_shape:tuple,
+        child_action_space):
+
+
+    X = parent1_body.shape[0]
+    Y = parent1_body.shape[1]
+
+    
+    parent1_state_dict = parent1_actor_critic.state_dict()
+    parent2_state_dict = parent2_actor_critic.state_dict()
+    
+    child_actor_critic = Policy(
+        child_observation_space_shape,
+        child_action_space,
+        base_kwargs={'recurrent': False}
+    )
+    
+    child_params = child_actor_critic.state_dict()
+
+    # -----------------------------
+    # copy weights of actor net
+    # -----------------------------
+
+    # copy weights of first layer
+    overhead = get_overhead()
+    child_mpio_with_count = get_mass_point_in_order_with_count(child_body)
+
+    get_param_s = GetParamState(
+        body1=parent1_body,
+        body2=parent2_body,
+        params1=parent1_actor_critic.state_dict(),
+        params2=parent2_actor_critic.state_dict()
+    )
+
+    child_params['base.actor.0.weight'] = torch.transpose(child_params['base.actor.0.weight'], 0, 1)
+    node_num = 0
+    while node_num < overhead:
+        child_params['base.actor.0.weight'][node_num] = get_param_s.non_coordinative_param(node_num)
+        node_num += 1
+    for mass_point_with_count in child_mpio_with_count:
+        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 0)
+        node_num += 1
+    for mass_point_with_count in child_mpio_with_count:
+        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 1)
+        node_num += 1
+
+    assert overhead + len(child_mpio_with_count) * 2 == child_params['base.actor.0.weight'].shape[0]
+
+    child_params['base.actor.0.weight'] = torch.transpose(child_params['base.actor.0.weight'], 0, 1)
+
+    # copy weights of middle layer
+    for i in range(64):
+        for j in range(64):
+            if np.random.random() < 0.5:
+                child_params['base.actor.2.weight'][i][j] = parent1_state_dict['base.actor.2.weight'][i][j]
+            else:
+                child_params['base.actor.2.weight'][i][j] = parent2_state_dict['base.actor.2.weight'][i][j]
+    
+    for i in range(64):
+        if np.random.random() < 0.5:
+                child_params['base.actor.2.bias'][i] = parent1_state_dict['base.actor.2.bias'][i]
+        else:
+            child_params['base.actor.2.bias'][i] = parent2_state_dict['base.actor.2.bias'][i]
+
+    for i in range(64):
+        if np.random.random() < 0.5:
+                child_params['base.actor.0.bias'][i] = parent1_state_dict['base.actor.0.bias'][i]
+        else:
+            child_params['base.actor.0.bias'][i] = parent2_state_dict['base.actor.0.bias'][i]
+
+    # copy weights of last layer
+    get_param_a = GetParamAction(parent1_body, parent2_body, parent1_state_dict, parent2_state_dict)
+    node_num = 0
+
+    for y in range(0, Y):
+        for x in range(0, X):
+            if child_body[y][x] in [3, 4]:
+                child_params['dist.fc_mean.weight'][node_num] = get_param_a(x, y, mid, axis, 'dist.fc_mean.weight')
+                child_params['dist.fc_mean.bias'][node_num] = get_param_a(x, y, mid, axis, 'dist.fc_mean.bias')
+                child_params['dist.logstd._bias'][node_num] = get_param_a(x, y, mid, axis, 'dist.logstd._bias')
+                node_num += 1
+    
+    child_actor_critic.load_state_dict(child_params)
+    
     return child_actor_critic

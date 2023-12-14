@@ -1,4 +1,6 @@
 import numpy as np
+import torch
+
 from utils.config import Config
 
 def get_overhead():
@@ -91,28 +93,36 @@ def get_mass_point_in_order(body: np.ndarray) -> list:
 
     return mass_point_in_order
 
+def get_mass_point_in_order_with_count(body:np.ndarray):
+
+    mpio = get_mass_point_in_order(body)
+    mpio_with_count = []
+
+    contained = []
+    for mass_point in mpio:
+        count = contained.count(mass_point)
+        mpio_with_count.append((mass_point, count))
+        contained.append(mass_point)
+        assert count <= 1
+
+    return mpio_with_count
+
+# ------------------------------------------------
+#  helper function for inherit_controller_mutate
+# ------------------------------------------------
 
 def get_mapping_table_state(child_body:np.ndarray, parent_body:np.ndarray):
-    
-    child_mpio = get_mass_point_in_order(child_body)
-    parent_mpio = get_mass_point_in_order(parent_body)
-
-    child_mpio_with_count = []
-    parent_mpio_with_count = []
-
-    for mpio_with_count, mpio in zip(
-        [child_mpio_with_count, parent_mpio_with_count],
-        [child_mpio, parent_mpio]
-    ):
-
-        contained = []
-        for mass_point in mpio:
-            count = contained.count(mass_point)
-            mpio_with_count.append((mass_point, count))
-            contained.append(mass_point)
-            assert count <= 1        
-
     """
+    Return: mapping_table
+        child structure's input layer j-th node corresponds to
+        parent structure's input layer i-th node
+        where mp_mapping_table[i] = j 
+    """
+
+    child_mpio_with_count = get_mass_point_in_order_with_count(child_body)
+    parent_mpio_with_count = get_mass_point_in_order_with_count(parent_body)     
+
+    """ mp_mapping_table
     child structure's j-th mass point corresponds to
     parent structure's i-th mass point.
     where mp_mapping_table[i] = j 
@@ -131,14 +141,20 @@ def get_mapping_table_state(child_body:np.ndarray, parent_body:np.ndarray):
 
     mapping_table = [i for i in range(overhead)]
     mapping_table += list(map(lambda x: -1 if (x==-1) else overhead + x, mp_mapping_table))
-    mapping_table += list(map(lambda x: -1 if (x==-1) else overhead + x + len(child_mpio), mp_mapping_table))
+    mapping_table += list(map(lambda x: -1 if (x==-1) else overhead + x + len(child_mpio_with_count), mp_mapping_table))
     for i in range(overtail):
-        mapping_table.append(i + overhead + 2 * len(child_mpio))
+        mapping_table.append(i + overhead + 2 * len(child_mpio_with_count))
 
     return mapping_table
 
 
 def get_mapping_table_action(body_s:np.ndarray, body_t:np.ndarray):
+    """
+    Return: mapping_table
+        child structure's output layer j-th node corresponds to
+        parent structure's output layer i-th node
+        where mp_mapping_table[i] = j 
+    """
 
     actuator_coordinates_s = np.stack(np.where(body_s >= 3), axis=-1)
     actuator_coordinates_t = np.stack(np.where(body_t >= 3), axis=-1)
@@ -153,3 +169,138 @@ def get_mapping_table_action(body_s:np.ndarray, body_t:np.ndarray):
         else: mapping_table.append(-1)
     
     return mapping_table
+
+
+# --------------------------------------------------
+#  helper function for inherit_controller_crossover
+# --------------------------------------------------
+class GetParamAction:
+    
+    def __init__(self, body1, body2, params1, params2) -> None:
+
+        Y = body1.shape[0]
+        X = body1.shape[1]
+
+        self.params1 = params1
+        self.params2 = params2
+
+        self.mpiowc_to_node1 = {}
+        self.mpiowc_to_node2 = {}
+        
+        counter1 = 0
+        counter2 = 0
+        for y in range(0, Y):
+            for x in range(0, X):
+                if body1[y][x] in [3, 4]:
+                    self.mpiowc_to_node1[(y, x)] = counter1
+                    counter1 += 1
+                if body2[y][x] in [3, 4]:
+                    self.mpiowc_to_node2[(y, x)] = counter2
+                    counter2 += 1
+
+    def __call__(self, x, y, mid, axis, key):
+
+        if axis == 0:
+            if y < mid:
+                node_num = self.mpiowc_to_node1[(y, x)]
+                return self.params1[key][node_num]
+            else:
+                node_num = self.mpiowc_to_node2[(y, x)]
+                return self.params2[key][node_num]
+        else:
+            if x < mid:
+                node_num = self.mpiowc_to_node1[(y, x)]
+                return self.params1[key][node_num]
+            else:
+                node_num = self.mpiowc_to_node2[(y, x)]
+                return self.params2[key][node_num]
+
+class GetParamState:
+
+    def __init__(self, body1, body2, params1, params2) -> None:
+
+        self.params1 = torch.transpose(params1['base.actor.0.weight'], 0, 1)
+        self.params2 = torch.transpose(params2['base.actor.0.weight'], 0, 1)
+
+        mpio_with_count1 = get_mass_point_in_order_with_count(body1)
+        mpio_with_count2 = get_mass_point_in_order_with_count(body2)
+
+        self.mpiowc_to_node1 = {}
+        self.mpiowc_to_node2 = {}
+
+        overhead = get_overhead()
+        
+        node_num = overhead
+        for mass_point_with_count in mpio_with_count1:
+            self.mpiowc_to_node1[mass_point_with_count] = (node_num, node_num + len(mpio_with_count1))
+            node_num += 1
+
+        node_num = overhead
+        for mass_point_with_count in mpio_with_count2:
+            self.mpiowc_to_node2[mass_point_with_count] = (node_num, node_num + len(mpio_with_count2))
+            node_num += 1
+
+        assert overhead + 2 * len(self.mpiowc_to_node1) == self.params1.shape[0]
+        assert overhead + 2 * len(self.mpiowc_to_node2) == self.params2.shape[0]
+
+    def non_coordinative_param(self, node_num):
+
+        parent_to_inherit = np.random.choice([1, 2])
+        if parent_to_inherit == 1:
+            return self.params1[node_num]
+        else:
+            return self.params2[node_num]
+
+    def __call__(self, mass_point_with_count, axis, mid, index):
+
+        (y, x), count = mass_point_with_count
+        
+        assert axis in [0, 1]
+        assert index in [0, 1]
+        
+        if axis == 0:
+            if y < mid:
+                parent_to_inherit = 1
+            elif y > mid:
+                parent_to_inherit = 2
+            else:
+                # when only parent2 has masspoint (y, x)
+                if not any((y, x) == mp for mp, _ in self.mpiowc_to_node1):
+                    parent_to_inherit = 2
+                # when only parent1 has masspoint (y, x)
+                elif not any((y, x) == mp for mp, _ in self.mpiowc_to_node2):
+                    parent_to_inherit = 1
+                # when both parents have masspoint (y, x)
+                else:
+                    parent_to_inherit = np.random.choice([1, 2])
+        else:
+            if x < mid:
+                parent_to_inherit = 1
+            elif x > mid:
+                parent_to_inherit = 2
+            else:
+                if not any((y, x) == mp for mp, _ in self.mpiowc_to_node1):
+                    parent_to_inherit = 2
+                elif not any((y, x) == mp for mp, _ in self.mpiowc_to_node2):
+                    parent_to_inherit = 1
+                else:
+                    parent_to_inherit = np.random.choice([1, 2])
+
+        if parent_to_inherit == 1:
+                if mass_point_with_count in self.mpiowc_to_node1:
+                    node_num = self.mpiowc_to_node1[mass_point_with_count][index]
+                else:
+                    assert count == 1
+                    node_num = self.mpiowc_to_node1[((y, x), 0)][index]
+                return self.params1[node_num]
+        
+        elif parent_to_inherit == 2:
+            if mass_point_with_count in self.mpiowc_to_node2:
+                    node_num = self.mpiowc_to_node2[mass_point_with_count][index]
+            else:
+                assert count == 1
+                node_num = self.mpiowc_to_node2[((y, x), 0)][index]
+            return self.params2[node_num]
+        
+        else:
+            raise ValueError(f"parent_to_inherit must be in [1, 2]. now {parent_to_inherit}")
