@@ -2,4 +2,4 @@ import argparse
 
 class Config:
 
-    env_name = "BridgeWalker-v"
+    env_name = "Walker-v0"
