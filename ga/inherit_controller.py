@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from a2c_ppo_acktr.model import Policy
-from ga.structure_analize import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
+from ga.analyze_structure import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
 
 def inherit_controller_mutation(
         parent_body: np.ndarray,

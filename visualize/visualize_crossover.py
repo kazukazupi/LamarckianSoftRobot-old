@@ -7,7 +7,7 @@ sys.path.append('.')
 
 from utils.ga_utils import load
 from ga.reproduction import crossover
-from ga.inherit import inherit_controller_crossover
+from ga.inherit_controller import inherit_controller_crossover
 from ppo.envs import make_vec_envs
 from utils.config import Config
 from visualize import visualize
