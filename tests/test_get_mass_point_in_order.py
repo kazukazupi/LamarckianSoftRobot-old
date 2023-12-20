@@ -4,7 +4,7 @@ import sys
 
 sys.path.append('.')
 
-from ga.inherit import get_mass_point_in_order, get_overhead, get_overtail
+from ga.structure_analize import get_mass_point_in_order, get_overhead, get_overtail
 from utils.ga_utils import load_from_robot_dir
 from utils.config import Config
 
@@ -23,6 +23,8 @@ def main():
     robot_dirs = sorted(glob.glob(os.path.join(exp_dir, '*/*/generation*/id*/robot_dir')))
     
     for robot_dir in robot_dirs:
+        if 'iba2_BidirectionalWalker_1_inherit' in robot_dir:
+            continue
         env_name = get_env_name(robot_dir)
         Config.env_name = env_name
         

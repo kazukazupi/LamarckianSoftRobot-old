@@ -2,9 +2,7 @@ import numpy as np
 import torch
 
 from a2c_ppo_acktr.model import Policy
-from ga.reproduction import crossover
 from ga.structure_analize import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
-from utils.config import Config
 
 def inherit_controller_mutation(
         parent_body: np.ndarray,
@@ -86,10 +84,8 @@ def inherit_controller_crossover(
         child_observation_space_shape:tuple,
         child_action_space):
 
-
     X = parent1_body.shape[0]
     Y = parent1_body.shape[1]
-
     
     parent1_state_dict = parent1_actor_critic.state_dict()
     parent2_state_dict = parent2_actor_critic.state_dict()
@@ -99,7 +95,6 @@ def inherit_controller_crossover(
         child_action_space,
         base_kwargs={'recurrent': False}
     )
-    
     child_params = child_actor_critic.state_dict()
 
     # -----------------------------
@@ -108,6 +103,7 @@ def inherit_controller_crossover(
 
     # copy weights of first layer
     overhead = get_overhead()
+    overtail = get_overtail()
     child_mpio_with_count = get_mass_point_in_order_with_count(child_body)
 
     get_param_s = GetParamState(
@@ -119,17 +115,20 @@ def inherit_controller_crossover(
 
     child_params['base.actor.0.weight'] = torch.transpose(child_params['base.actor.0.weight'], 0, 1)
     node_num = 0
-    while node_num < overhead:
-        child_params['base.actor.0.weight'][node_num] = get_param_s.non_coordinative_param(node_num)
+    
+    while node_num < overhead: # copy weight of connections from nodes receiving non-coordinative information
+        child_params['base.actor.0.weight'][node_num] = get_param_s.get_head_param(node_num, 'base.actor.0.weight')
         node_num += 1
-    for mass_point_with_count in child_mpio_with_count:
-        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 0)
+    for mass_point_with_count in child_mpio_with_count: # copy weight of connections from nodes receiving coordinative information
+        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 0, 'base.actor.0.weight')
         node_num += 1
-    for mass_point_with_count in child_mpio_with_count:
-        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 1)
+    for mass_point_with_count in child_mpio_with_count: # copy weight of connections from nodes receiving coordinative information
+        child_params['base.actor.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 1, 'base.actor.0.weight')
         node_num += 1
-
-    assert overhead + len(child_mpio_with_count) * 2 == child_params['base.actor.0.weight'].shape[0]
+    for i in range(overtail): # copy weight of connections from nodes receiving non-coordinative information
+        child_params['base.actor.0.weight'][i + overhead + len(child_mpio_with_count) * 2] = get_param_s.get_tail_param(i, 'base.actor.0.weight')
+    
+    assert overhead + overtail + len(child_mpio_with_count) * 2 == child_params['base.actor.0.weight'].shape[0]
 
     child_params['base.actor.0.weight'] = torch.transpose(child_params['base.actor.0.weight'], 0, 1)
 
@@ -164,7 +163,61 @@ def inherit_controller_crossover(
                 child_params['dist.fc_mean.bias'][node_num] = get_param_a(x, y, mid, axis, 'dist.fc_mean.bias')
                 child_params['dist.logstd._bias'][node_num] = get_param_a(x, y, mid, axis, 'dist.logstd._bias')
                 node_num += 1
+
+    # -----------------------------
+    # copy weights of actor net
+    # -----------------------------
+
+    # copy weights of first layer
+    child_params['base.critic.0.weight'] = torch.transpose(child_params['base.critic.0.weight'], 0, 1)
+    node_num = 0
+    while node_num < overhead:
+        child_params['base.critic.0.weight'][node_num] = get_param_s.get_head_param(node_num, 'base.critic.0.weight')
+        node_num += 1
+    for mass_point_with_count in child_mpio_with_count:
+        child_params['base.critic.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 0, 'base.critic.0.weight')
+        node_num += 1
+    for mass_point_with_count in child_mpio_with_count:
+        child_params['base.critic.0.weight'][node_num] = get_param_s(mass_point_with_count, axis, mid, 1, 'base.critic.0.weight')
+        node_num += 1
+    for i in range(overtail):
+        child_params['base.critic.0.weight'][i + overhead + len(child_mpio_with_count) * 2] = get_param_s.get_tail_param(i, 'base.critic.0.weight')
     
+    assert overhead + overtail + len(child_mpio_with_count) * 2 == child_params['base.critic.0.weight'].shape[0]
+    child_params['base.critic.0.weight'] = torch.transpose(child_params['base.critic.0.weight'], 0, 1)
+
+    # copy weights of middle layer
+    for i in range(64):
+        for j in range(64):
+            if np.random.random() < 0.5:
+                child_params['base.critic.2.weight'][i][j] = parent1_state_dict['base.critic.2.weight'][i][j]
+            else:
+                child_params['base.critic.2.weight'][i][j] = parent2_state_dict['base.critic.2.weight'][i][j]
+    
+    for i in range(64):
+        if np.random.random() < 0.5:
+                child_params['base.critic.2.bias'][i] = parent1_state_dict['base.critic.2.bias'][i]
+        else:
+            child_params['base.critic.2.bias'][i] = parent2_state_dict['base.critic.2.bias'][i]
+
+    for i in range(64):
+        if np.random.random() < 0.5:
+                child_params['base.critic.0.bias'][i] = parent1_state_dict['base.critic.0.bias'][i]
+        else:
+            child_params['base.critic.0.bias'][i] = parent2_state_dict['base.critic.0.bias'][i]
+
+    # copy weights of last layer
+    for i in range(64):
+        if np.random.random() < 0.5:
+            child_params['base.critic_linear.weight'][0][i] = parent1_state_dict['base.critic_linear.weight'][0][i]
+        else:
+            child_params['base.critic_linear.weight'][0][i] = parent2_state_dict['base.critic_linear.weight'][0][i]
+
+    if np.random.random() < 0.5:
+        child_params['base.critic_linear.bias'] = parent1_state_dict['base.critic_linear.bias']
+    else:
+        child_params['base.critic_linear.bias'] = parent2_state_dict['base.critic_linear.bias']
+
+    # return
     child_actor_critic.load_state_dict(child_params)
-    
     return child_actor_critic

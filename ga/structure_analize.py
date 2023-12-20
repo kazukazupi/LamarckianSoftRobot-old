@@ -215,43 +215,63 @@ class GetParamAction:
                 node_num = self.mpiowc_to_node2[(y, x)]
                 return self.params2[key][node_num]
 
+
 class GetParamState:
 
     def __init__(self, body1, body2, params1, params2) -> None:
 
-        self.params1 = torch.transpose(params1['base.actor.0.weight'], 0, 1)
-        self.params2 = torch.transpose(params2['base.actor.0.weight'], 0, 1)
+        self.params1 = {
+            'base.actor.0.weight': torch.transpose(params1['base.actor.0.weight'], 0, 1),
+            'base.critic.0.weight': torch.transpose(params1['base.critic.0.weight'], 0, 1)
+        }
+        self.params2 = {
+            'base.actor.0.weight': torch.transpose(params2['base.actor.0.weight'], 0, 1),
+            'base.critic.0.weight': torch.transpose(params2['base.critic.0.weight'], 0, 1)
+        }
 
-        mpio_with_count1 = get_mass_point_in_order_with_count(body1)
-        mpio_with_count2 = get_mass_point_in_order_with_count(body2)
+        self.mpio_with_count1 = get_mass_point_in_order_with_count(body1)
+        self.mpio_with_count2 = get_mass_point_in_order_with_count(body2)
 
         self.mpiowc_to_node1 = {}
         self.mpiowc_to_node2 = {}
 
         overhead = get_overhead()
+        overtail = get_overtail()
         
         node_num = overhead
-        for mass_point_with_count in mpio_with_count1:
-            self.mpiowc_to_node1[mass_point_with_count] = (node_num, node_num + len(mpio_with_count1))
+        for mass_point_with_count in self.mpio_with_count1:
+            self.mpiowc_to_node1[mass_point_with_count] = (node_num, node_num + len(self.mpio_with_count1))
             node_num += 1
 
         node_num = overhead
-        for mass_point_with_count in mpio_with_count2:
-            self.mpiowc_to_node2[mass_point_with_count] = (node_num, node_num + len(mpio_with_count2))
+        for mass_point_with_count in self.mpio_with_count2:
+            self.mpiowc_to_node2[mass_point_with_count] = (node_num, node_num + len(self.mpio_with_count2))
             node_num += 1
 
-        assert overhead + 2 * len(self.mpiowc_to_node1) == self.params1.shape[0]
-        assert overhead + 2 * len(self.mpiowc_to_node2) == self.params2.shape[0]
+        assert overhead + overtail + 2 * len(self.mpiowc_to_node1) == self.params1['base.actor.0.weight'].shape[0]
+        assert overhead + overtail + 2 * len(self.mpiowc_to_node2) == self.params2['base.actor.0.weight'].shape[0]
 
-    def non_coordinative_param(self, node_num):
+    def get_head_param(self, i, key):
+
+        assert i < get_overhead()
 
         parent_to_inherit = np.random.choice([1, 2])
         if parent_to_inherit == 1:
-            return self.params1[node_num]
+            return self.params1[key][i]
         else:
-            return self.params2[node_num]
+            return self.params2[key][i]
+        
+    def get_tail_param(self, i, key):
 
-    def __call__(self, mass_point_with_count, axis, mid, index):
+        assert i < get_overtail()
+
+        parent_to_inherit = np.random.choice([1, 2])
+        if parent_to_inherit == 1:
+            return self.params1[key][get_overhead() + 2 * len(self.mpio_with_count1) + i]
+        else:
+            return self.params2[key][get_overhead() + 2 * len(self.mpio_with_count2) + i]
+
+    def __call__(self, mass_point_with_count, axis, mid, index, key):
 
         (y, x), count = mass_point_with_count
         
@@ -292,7 +312,7 @@ class GetParamState:
                 else:
                     assert count == 1
                     node_num = self.mpiowc_to_node1[((y, x), 0)][index]
-                return self.params1[node_num]
+                return self.params1[key][node_num]
         
         elif parent_to_inherit == 2:
             if mass_point_with_count in self.mpiowc_to_node2:
@@ -300,7 +320,8 @@ class GetParamState:
             else:
                 assert count == 1
                 node_num = self.mpiowc_to_node2[((y, x), 0)][index]
-            return self.params2[node_num]
+            return self.params2[key][node_num]
         
         else:
             raise ValueError(f"parent_to_inherit must be in [1, 2]. now {parent_to_inherit}")
+        
