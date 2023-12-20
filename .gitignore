@@ -1,0 +1,4 @@
+result/
+__pycache__
+tests/
+visualize/log_dir
