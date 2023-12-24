@@ -20,6 +20,8 @@ from a2c_ppo_acktr.storage import RolloutStorage
 # Derived from
 # https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail
 
+LOG_DIR_NAME = 'log_dir'
+
 def run_ppo(
     body:np.ndarray,
     connections:np.ndarray,
@@ -60,7 +62,7 @@ def run_ppo(
     # ------------------------------------
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if Config.cuda else "cpu")
-    log_dir = saving_dir
+    log_dir = os.path.join(saving_dir, LOG_DIR_NAME)
 
     envs = make_vec_envs(
         env_name = Config.env_name,
