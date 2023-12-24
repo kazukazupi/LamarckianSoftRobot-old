@@ -7,7 +7,7 @@ sys.path.append('.')
 
 from utils.ga_utils import load
 from ga.reproduction import mutate_structure
-from ga.inherit import inherit_controller_mutation
+from ga.inherit_controller import inherit_controller_mutation
 from ppo.envs import make_vec_envs
 from utils.config import Config
 from visualize import visualize

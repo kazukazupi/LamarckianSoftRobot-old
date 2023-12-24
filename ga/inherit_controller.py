@@ -1,8 +1,80 @@
 import numpy as np
+import os
 import torch
 
 from a2c_ppo_acktr.model import Policy
-from ga.structure_analize import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
+from ga.analyze_structure import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
+from utils.config import Config
+
+def get_controller(
+        body: np.ndarray,
+        observation_space_shape:tuple,
+        action_space,
+        parents,
+        crossover_info=None
+) -> Policy:
+    
+    # parents: list[Individual]
+    
+    # inherit is not allowed or has no parents
+    if (not Config.inherit_en) or len(parents) == 0:
+
+        actor_critic = Policy(
+            obs_shape=observation_space_shape,
+            action_space=action_space
+        )
+    
+    # inherit is allowed and is emerged from mutation
+    elif len(parents) == 1:
+
+        parent = parents[0]
+        parent_actor_critic = torch.load(
+            os.path.join(parent.saving_dir, 'actor_critic.pt'),
+            map_location='cpu'
+        )[0]
+
+        actor_critic = inherit_controller_mutation(
+            parent_body=parent.body,
+            parent_actor_critic=parent_actor_critic,
+            child_body=body,
+            child_observation_space_shape=observation_space_shape,
+            child_action_space=action_space
+        )
+
+    # inherit is allowed and is emerged from crossover
+    elif len(parents) == 2:
+
+        assert crossover_info is not None
+        axis = crossover_info['axis']
+        mid = crossover_info['mid']
+
+        parent1 = parents[0]
+        parent2 = parents[1]
+
+        parent1_actor_critic = torch.load(
+            os.path.join(parent1.saving_dir, 'actor_critic.pt'),
+            map_location='cpu'
+        )[0]
+
+        parent2_actor_critic = torch.load(
+            os.path.join(parent2.saving_dir, 'actor_critic.pt'),
+            map_location='cpu'
+        )[0]
+
+        actor_critic = inherit_controller_crossover(
+            child_body=body,
+            axis=axis,
+            mid=mid,
+            parent1_body=parent1.body,
+            parent2_body=parent2.body,
+            parent1_actor_critic=parent1_actor_critic,
+            parent2_actor_critic=parent2_actor_critic,
+            child_observation_space_shape=observation_space_shape,
+            child_action_space=action_space
+        )
+
+    return actor_critic
+
 
 def inherit_controller_mutation(
         parent_body: np.ndarray,
