@@ -12,6 +12,7 @@ from ppo import utils
 from ppo.evaluate import evaluate
 from ppo.envs import make_vec_envs
 from utils.config import Config
+from ga.inherit_controller import get_controller
 
 from a2c_ppo_acktr import algo
 from a2c_ppo_acktr.model import Policy
@@ -25,7 +26,9 @@ LOG_DIR_NAME = 'log_dir'
 def run_ppo(
     body:np.ndarray,
     connections:np.ndarray,
-    saving_dir:str):
+    saving_dir:str,
+    parents,
+    crossover_info):
 
     termination_condition = utils.TerminationCondition(Config.max_iters)
 
@@ -63,6 +66,7 @@ def run_ppo(
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if Config.cuda else "cpu")
     log_dir = os.path.join(saving_dir, LOG_DIR_NAME)
+    os.mkdir(log_dir)
 
     envs = make_vec_envs(
         env_name = Config.env_name,
@@ -75,16 +79,24 @@ def run_ppo(
         allow_early_resets = False
     )
 
-    actor_critic = Policy(
-        envs.observation_space.shape,
-        envs.action_space,
-        base_kwargs={'recurrent': Config.recurrent_policy}
+    actor_critic = get_controller(
+        body=body,
+        observation_space_shape=envs.observation_space.shape,
+        action_space=envs.action_space,
+        parents=parents,
+        crossover_info=crossover_info
     )
+
+    # actor_critic = Policy(
+    #     envs.observation_space.shape,
+    #     envs.action_space,
+    #     base_kwargs={'recurrent': Config.recurrent_policy}
+    # )
     
-    # if parent_robot_dir is not None:
-    #     assert(Config.inherit_en)
-    #     utils.inherit_policy(actor_critic, body, parent_robot_dir, Config.env_name)
-    #     if Config.print_en: print(f'inherit policy from {parent_robot_dir}')
+    # # if parent_robot_dir is not None:
+    # #     assert(Config.inherit_en)
+    # #     utils.inherit_policy(actor_critic, body, parent_robot_dir, Config.env_name)
+    # #     if Config.print_en: print(f'inherit policy from {parent_robot_dir}')
 
     actor_critic.to(device)
 

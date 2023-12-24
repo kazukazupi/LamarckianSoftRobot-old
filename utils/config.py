@@ -3,14 +3,15 @@ import torch
 
 class Config:
 
-    env_name = "Walker-v0"
+    env_name = 'Walker-v0'
+    exp_dir = 'result/experiment'
     shape = (5, 5)
     max_evaluations = 250
     population_size = 25
     mutation_rate = 0.1
     elite_rate_high = 0.6
     elite_rate_low = 0.1
-    inherit_en = False
+    inherit_en = True
     print_en = True
     algo = 'ppo'
     gail = False

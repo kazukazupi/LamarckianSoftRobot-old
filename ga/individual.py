@@ -19,9 +19,10 @@ class Individual:
             body:np.ndarray,
             connections:np.ndarray,
             saving_dir:str,
-            *parents,
+            parents,
             learning_en=True,
-            fitness=None
+            fitness=None,
+            crossover_info=None
         ):
 
         assert len(parents) <= 2
@@ -34,18 +35,21 @@ class Individual:
         self.learning_en = learning_en
         self.fitness = fitness
         self.parents = parents
+        self.crossover_info = crossover_info
 
         # make directory
         if not os.path.exists(self.saving_dir):
             os.mkdir(self.saving_dir)
 
-    def train(self):
+    def train(self, parents):
         
         # tarin by ppo
         run_ppo(
             body=self.body,
             connections=self.connections,
             saving_dir=self.saving_dir,
+            parents=parents,
+            crossover_info=self.crossover_info
         )
 
     def save(self):
@@ -107,7 +111,7 @@ class Individual:
             return None
         else:
             (body, connections) = result
-            return Individual(id, body, connections, saving_dir, parent.id)
+            return Individual(id, body, connections, saving_dir, [parent.id])
     
     @staticmethod
     def reproduce_by_crossover(parent1, parent2, id:int, saving_dir:str):
@@ -118,4 +122,5 @@ class Individual:
             return None
         else:
             (body, connections), (axis, mid) = result
-            return Individual(id, body, connections, saving_dir, parent1.id, parent2.id)
+            crossover_info = {'axis': axis, 'mid': mid}
+            return Individual(id, body, connections, saving_dir, [parent1.id, parent2.id], crossover_info=crossover_info)
