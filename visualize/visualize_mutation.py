@@ -5,7 +5,7 @@ import evogym.envs
 import sys
 sys.path.append('.')
 
-from utils.ga_utils import load
+from utils.utils import load
 from ga.reproduction import mutate_structure
 from ga.inherit_controller import inherit_controller_mutation
 from ppo.envs import make_vec_envs

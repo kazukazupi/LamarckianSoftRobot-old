@@ -1,5 +1,5 @@
 import numpy as np
-from utils.config import Config
+from utils import Config
 from evogym import (
     get_uniform, draw, is_connected, 
     has_actuator, get_full_connectivity

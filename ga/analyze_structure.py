@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from utils.config import Config
+from utils import Config
 
 def get_overhead():
 

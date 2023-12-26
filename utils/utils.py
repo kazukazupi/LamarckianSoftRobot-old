@@ -3,6 +3,11 @@ import os
 import numpy as np
 import torch
 
+def print_and_save(message:str, filename:str, mode='a'):
+    print(message)
+    with open(filename, mode, newline='\n') as f:
+        f.write(message + '\n')
+
 def load(exp_dir:str, generation:int, id:int):
 
     while not os.path.exists(f'{exp_dir}/generation{str(generation).zfill(2)}/id{str(id).zfill(2)}'):
