@@ -14,9 +14,10 @@ def run_ga():
     
     # read args
     Config.initialize()
-
+    
     # set experiment directory
     os.makedirs(Config.exp_dir)
+    Config.dump(os.path.join(Config.exp_dir, 'config.json'))
 
     # txt file to log
     log_file_path = os.path.join(Config.exp_dir, 'log.txt')

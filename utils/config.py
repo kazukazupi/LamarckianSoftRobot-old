@@ -1,5 +1,8 @@
 import argparse
+import json
 import torch
+import os
+
 
 class Config:
         
@@ -192,6 +195,16 @@ class Config:
                 'Recurrent policy is not implemented for ACKTR'
 
         args_dict = vars(args)
-
+        
         for key, value in args_dict.items():
             setattr(cls, key, value)
+    
+    def __getattribute__(cls, arg):
+        return cls.args_dict[arg]
+    
+    @classmethod
+    def dump(cls, filename):
+        args_dict = {key : value for key, value in cls.__dict__.items() if not key in ['initialize', 'dump'] and not key.startswith('__')}
+        print(args_dict)
+        with open(filename, 'w') as f:
+            json.dump(args_dict, f, indent=4)
