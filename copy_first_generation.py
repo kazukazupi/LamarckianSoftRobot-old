@@ -19,7 +19,7 @@ def main() -> None:
     )
 
     # copy config.json
-    shutil.copy2(
+    shutil.copy(
         src=os.path.join(args.src_exp_dir, 'config.json'),
         dst=os.path.join(args.dst_exp_dir, 'config.json')
     )

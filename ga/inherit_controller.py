@@ -31,7 +31,7 @@ def get_controller(
         parent = parents[0]
         parent_actor_critic = torch.load(
             os.path.join(parent.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         actor_critic = inherit_controller_mutation(
@@ -55,12 +55,12 @@ def get_controller(
 
         parent1_actor_critic = torch.load(
             os.path.join(parent1.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         parent2_actor_critic = torch.load(
             os.path.join(parent2.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         actor_critic = inherit_controller_crossover(
