@@ -5,7 +5,7 @@ import os
 from utils import Config, print_and_save
 from ga.population import Population
 
-def run_from_middle(exp_dir:str):
+def run_from_middle(exp_dir:str, crossover_rate:float, inherit_en:bool):
 
     #-------------------------
     # 1. setup
@@ -13,6 +13,12 @@ def run_from_middle(exp_dir:str):
     
     # read args
     Config.load(os.path.join(exp_dir, 'config.json'))
+    Config.exp_dir = exp_dir
+    if crossover_rate is not None:
+        Config.crossover_rate = crossover_rate
+    if inherit_en is not None:
+        Config.inherit_en = inherit_en
+    Config.dump(os.path.join(Config.exp_dir, 'config.json'))
 
     # txt file to log
     log_file_path = os.path.join(Config.exp_dir, 'log.txt')
