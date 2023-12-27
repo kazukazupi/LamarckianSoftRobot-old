@@ -5,34 +5,25 @@ import os
 from utils import Config, print_and_save
 from ga.population import Population
 
-def run_ga():
+def run_from_middle(exp_dir:str):
 
     #-------------------------
     # 1. setup
     #-------------------------
     
     # read args
-    Config.initialize()
-    
-    # set experiment directory
-    os.makedirs(Config.exp_dir)
-    Config.dump(os.path.join(Config.exp_dir, 'config.json'))
+    Config.load(os.path.join(exp_dir, 'config.json'))
 
     # txt file to log
     log_file_path = os.path.join(Config.exp_dir, 'log.txt')
-    print_and_save(f'started evolution.', log_file_path, mode='w')
-    print_and_save(f'save results in : {Config.exp_dir}', log_file_path)
+    print_and_save(f'restarted evolution.', log_file_path)
 
     # csv file to log fitness
     fitness_csv_path = os.path.join(Config.exp_dir, 'fitness.csv')
-    with open(fitness_csv_path, 'w') as f:
-        writer = csv.writer(f)
-        row = ['i_generation'] + [f'id{id}' for id in range(Config.population_size)]
-        writer.writerow(row)
     
     # initialize population
-    population = Population.initialize()
-    print_and_save(f'Initialized {Config.population_size} individuals.', log_file_path)
+    population = Population.load()
+    print_and_save(f'Loaded {Config.population_size} individuals.', log_file_path)
 
     #-------------------------
     # 2. evolution

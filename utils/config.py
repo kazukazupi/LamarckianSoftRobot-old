@@ -1,7 +1,6 @@
 import argparse
 import json
 import torch
-import os
 
 
 class Config:
@@ -22,6 +21,8 @@ class Config:
             '--max-evaluations', type=int, default=250)
         parser.add_argument(
             '--population-size', type=int, default=25)
+        parser.add_argument(
+            '--crossover_rate', default=0.5)
         parser.add_argument(
             '--mutation-rate', default=0.1)
         parser.add_argument(
@@ -199,12 +200,15 @@ class Config:
         for key, value in args_dict.items():
             setattr(cls, key, value)
     
-    def __getattribute__(cls, arg):
-        return cls.args_dict[arg]
-    
     @classmethod
     def dump(cls, filename):
-        args_dict = {key : value for key, value in cls.__dict__.items() if not key in ['initialize', 'dump'] and not key.startswith('__')}
-        print(args_dict)
+        args_dict = {key : value for key, value in cls.__dict__.items() if (not key in ['initialize', 'dump', 'load'] and not key.startswith('__'))}
         with open(filename, 'w') as f:
             json.dump(args_dict, f, indent=4)
+
+    @classmethod
+    def load(cls, filename):
+        with open(filename) as f:
+            args_dict = json.load(f)
+        for key, value in args_dict.items():
+            setattr(cls, key, value)
