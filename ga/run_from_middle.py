@@ -1,6 +1,7 @@
 import csv
 import numpy as np
 import os
+import torch
 
 from utils import Config, print_and_save
 from ga.population import Population
@@ -18,11 +19,13 @@ def run_from_middle(exp_dir:str, crossover_rate:float, inherit_en:bool):
         Config.crossover_rate = crossover_rate
     if inherit_en is not None:
         Config.inherit_en = inherit_en
+    Config.cuda = torch.cuda.is_available()
     Config.dump(os.path.join(Config.exp_dir, 'config.json'))
 
     # txt file to log
     log_file_path = os.path.join(Config.exp_dir, 'log.txt')
-    print_and_save(f'restarted evolution.', log_file_path)
+    # TO DO: 途中で始めた際に新たなlogファイルを作る
+    print_and_save(f'restarted evolution.', log_file_path, 'w')
 
     # csv file to log fitness
     fitness_csv_path = os.path.join(Config.exp_dir, 'fitness.csv')
@@ -87,7 +90,7 @@ def run_from_middle(exp_dir:str, crossover_rate:float, inherit_en:bool):
         #-------------------------
 
         population.generation += 1
-        elite_rate = 0.6
+        elite_rate = (Config.max_evaluations - population.num_evals - 1) / (Config.max_evaluations - 1) * (Config.elite_rate_high - Config.elite_rate_low) + Config.elite_rate_low
         num_survivors = int(max([2, np.ceil(elite_rate * Config.population_size)]))
 
         print_and_save("--------------------------------------------------------------------------------------------", log_file_path)
