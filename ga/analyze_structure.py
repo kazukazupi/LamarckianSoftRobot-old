@@ -5,7 +5,7 @@ from utils import Config
 
 def get_overhead():
 
-    if Config.env_name in ["BridgeWalker-v0", 'ObstacleTraverser-v0', 'ObstacleTraverser-v1']:
+    if Config.env_name in ["BridgeWalker-v0", 'ObstacleTraverser-v0', 'ObstacleTraverser-v1', 'Climber-v2']:
             return 3
     elif Config.env_name in ['Walker-v0', 'BidirectionalWalker-v0', 'Carrier-v0', 'Carrier-v1', 'Pusher-v0']:
         return 2
@@ -21,6 +21,8 @@ def get_overtail():
         return 3
     elif Config.env_name in ['Carrier-v0', 'Carrier-v1', 'Pusher-v0']:
         return 4
+    elif Config.env_name in ['Climber-v2']:
+        return 7
     elif Config.env_name in ['ObstacleTraverser-v0', 'ObstacleTraverser-v1']:
         return 11
     else:
