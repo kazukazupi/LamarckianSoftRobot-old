@@ -90,7 +90,7 @@ def run_ga():
         #-------------------------
 
         population.generation += 1
-        elite_rate = 0.6
+        elite_rate = (Config.max_evaluations - population.num_evals - 1) / (Config.max_evaluations - 1) * (Config.elite_rate_high - Config.elite_rate_low) + Config.elite_rate_low
         num_survivors = int(max([2, np.ceil(elite_rate * Config.population_size)]))
 
         print_and_save("--------------------------------------------------------------------------------------------", log_file_path)
