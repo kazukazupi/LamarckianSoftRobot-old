@@ -66,7 +66,8 @@ def run_ppo(
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if Config.cuda else "cpu")
     log_dir = os.path.join(saving_dir, LOG_DIR_NAME)
-    os.mkdir(log_dir)
+    if not os.path.exists(log_dir):
+        os.mkdir(log_dir)
 
     envs = make_vec_envs(
         env_name = Config.env_name,

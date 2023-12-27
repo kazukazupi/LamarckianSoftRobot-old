@@ -19,13 +19,13 @@ class Individual:
             body:np.ndarray,
             connections:np.ndarray,
             saving_dir:str,
-            parents,
+            parents_id,
             learning_en=True,
             fitness=None,
             crossover_info=None
         ):
 
-        assert len(parents) <= 2
+        assert len(parents_id) <= 2
 
         # initialize
         self.id = id
@@ -34,17 +34,17 @@ class Individual:
         self.saving_dir = saving_dir
         self.learning_en = learning_en
         self.fitness = fitness
-        self.parents = parents
+        self.parents_id = parents_id
         self.crossover_info = crossover_info
 
         # make directory
         if not os.path.exists(self.saving_dir):
-            os.mkdir(self.saving_dir)
+            os.makedirs(self.saving_dir)
 
     def train(self, parents):
         
         # tarin by ppo
-        run_ppo(
+        self.fitness = run_ppo(
             body=self.body,
             connections=self.connections,
             saving_dir=self.saving_dir,
@@ -62,7 +62,7 @@ class Individual:
         dict_to_write = {
             'id': self.id,
             'learning_en': self.learning_en,
-            'parents': self.parents,
+            'parents_id': self.parents_id,
             'fitness': self.fitness
         }
         json_path = os.path.join(self.saving_dir, JSON_FILE_NAME)
@@ -83,7 +83,7 @@ class Individual:
 
         id = read_dict['id']
         learning_en = read_dict['learning_en']
-        parents = read_dict['parents']
+        parents_id = read_dict['parents_id']
         fitness = read_dict['fitness']
 
         return Individual(
@@ -91,7 +91,7 @@ class Individual:
             body,
             connections,
             saving_dir,
-            parents,
+            parents_id,
             learning_en=learning_en,
             fitness=fitness
         )
@@ -100,7 +100,7 @@ class Individual:
     def configure_new(id:int, shape:tuple, saving_dir:str):
 
         body, connections = sample_robot(shape)
-        return Individual(id, body, connections, saving_dir)
+        return Individual(id, body, connections, saving_dir, [])
 
     @staticmethod
     def reproduce_by_mutation(parent, id:int, saving_dir:str):

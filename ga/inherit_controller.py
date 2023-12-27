@@ -4,7 +4,7 @@ import torch
 
 from a2c_ppo_acktr.model import Policy
 from ga.analyze_structure import get_overhead, get_overtail, get_mapping_table_action, get_mapping_table_state, get_mass_point_in_order_with_count, GetParamAction, GetParamState
-from utils.config import Config
+from utils import Config
 
 def get_controller(
         body: np.ndarray,
@@ -26,11 +26,12 @@ def get_controller(
     
     # inherit is allowed and is emerged from mutation
     elif len(parents) == 1:
+        print('inherited controller.')
 
         parent = parents[0]
         parent_actor_critic = torch.load(
             os.path.join(parent.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         actor_critic = inherit_controller_mutation(
@@ -43,7 +44,8 @@ def get_controller(
 
     # inherit is allowed and is emerged from crossover
     elif len(parents) == 2:
-
+        print('inherited controller.')
+        
         assert crossover_info is not None
         axis = crossover_info['axis']
         mid = crossover_info['mid']
@@ -53,12 +55,12 @@ def get_controller(
 
         parent1_actor_critic = torch.load(
             os.path.join(parent1.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         parent2_actor_critic = torch.load(
             os.path.join(parent2.saving_dir, 'actor_critic.pt'),
-            map_location='cpu'
+            map_location=lambda storage, loc: storage
         )[0]
 
         actor_critic = inherit_controller_crossover(

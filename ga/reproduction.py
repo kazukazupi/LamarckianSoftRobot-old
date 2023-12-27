@@ -1,5 +1,5 @@
 import numpy as np
-from utils.config import Config
+from utils import Config
 from evogym import (
     get_uniform, draw, is_connected, 
     has_actuator, get_full_connectivity
@@ -49,13 +49,11 @@ def crossover(body1:np.ndarray, body2:np.ndarray) -> tuple:
             return None
 
         axis = np.random.choice([0, 1])
-        axis = 1
         
         if axis == 0:
             mid = np.random.choice([y for y in range(1, Y)])
         else:
             mid = np.random.choice([x for x in range(1, X)])
-        mid = 3
 
         if axis == 0:
             child_body = np.concatenate((body1[:mid], body2[mid:]), axis)
