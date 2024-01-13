@@ -12,7 +12,7 @@ from ppo import utils
 from ppo.evaluate import evaluate
 from ppo.envs import make_vec_envs
 from utils.config import Config
-from ga.inherit_controller import get_controller
+
 
 from a2c_ppo_acktr import algo
 from a2c_ppo_acktr.model import Policy
@@ -79,6 +79,8 @@ def run_ppo(
         device = device,
         allow_early_resets = False
     )
+
+    from ga.inherit_controller import get_controller
 
     actor_critic = get_controller(
         body=body,

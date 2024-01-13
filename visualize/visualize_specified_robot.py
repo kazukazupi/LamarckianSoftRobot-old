@@ -17,13 +17,13 @@ def main():
 
     Config.env_name = args.env_name
 
-    structure = np.load(os.path.join(args.robot_dir, "structure.npy"))
+    structure = np.load(os.path.join(args.robot_dir, "body.npy"))
     connections = np.load(os.path.join(args.robot_dir, "connections.npy"))
 
     print(structure)
     print(connections)
 
-    actor_critic, obs_rms = torch.load(os.path.join(args.robot_dir, "parameter.pt"), map_location='cpu')
+    actor_critic, obs_rms = torch.load(os.path.join(args.robot_dir, "actor_critic.pt"), map_location='cpu')
 
     visualize(
         structure=structure,

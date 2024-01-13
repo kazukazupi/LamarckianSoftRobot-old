@@ -110,12 +110,19 @@ def run_ga():
                 assert not individual.learning_en
 
             else:
-                # configure newborn robot from crossover
-                if np.random.random() < Config.crossover_rate:
-                    parent1_id, parent2_id = population.configure_from_crossover(id, id_elite)
-                    print_and_save(f'individual {id} was reproduced from {parent1_id}, {parent2_id} by crossover', log_file_path)
-
-                # configure newborn robot from mutation
-                else:
-                    parent_id = population.configure_from_mutation(id, id_elite)
-                    print_and_save(f'individual {id} was reproduced from {parent_id} by mutation', log_file_path)
+                while True:
+                    # configure newborn robot from crossover
+                    if np.random.random() < Config.crossover_rate:
+                        result = population.configure_from_crossover(id, id_elite)
+                        if result is not None:
+                            parent1_id, parent2_id = result
+                            print_and_save(f'individual {id} was reproduced from {parent1_id}, {parent2_id} by crossover', log_file_path)
+                            break
+                    # configure newborn robot from mutation
+                    else:
+                        result = population.configure_from_mutation(id, id_elite)
+                        if result is not None:
+                            parent1_id = result
+                            parent_id = population.configure_from_mutation(id, id_elite)
+                            print_and_save(f'individual {id} was reproduced from {parent_id} by mutation', log_file_path)
+                            break

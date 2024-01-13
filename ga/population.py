@@ -72,7 +72,9 @@ class Population:
     # reproduce self.individuals[child_id] from parent by mutation
     def configure_from_mutation(self, child_id, id_elite):
 
-        while True:
+        count = 100
+
+        while count > 0:
             parent_id = np.random.choice(id_elite)
             parent = self.individuals[parent_id]
             child = Individual.reproduce_by_mutation(parent, child_id, get_saving_dir_name(self.generation, child_id))
@@ -82,11 +84,16 @@ class Population:
                     self.individuals[child_id] = child
                     child.save()
                     return parent_id
+            count -= 1
+
+        return None
 
     # reproduce self.individuals[child_id] from two parents by crossover
     def configure_from_crossover(self, child_id, id_elite):
+
+        count = 100
         
-        while True:
+        while count > 0:
             parent1_id, parent2_id = np.random.choice(id_elite, size=2, replace=False)
             parent1 = self.individuals[parent1_id]
             parent2 = self.individuals[parent2_id]
@@ -97,5 +104,8 @@ class Population:
                     self.individuals[child_id] = child
                     child.save()
                     return parent1_id, parent2_id
+            count -= 1
+
+        return None
 
     
