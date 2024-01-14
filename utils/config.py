@@ -30,7 +30,7 @@ class Config:
         parser.add_argument(
             '--elite-rate-low', type=float, default=0.1)
         parser.add_argument(
-            '--inherit-en', type=bool, default=False)
+            '--inherit-en', type=bool, default=True)
         
         # PPO params
         parser.add_argument(

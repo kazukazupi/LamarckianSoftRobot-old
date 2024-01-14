@@ -3,6 +3,7 @@ import numpy as np
 import os
 from evogym import hashable
 from ga.individual import Individual
+from ga.analyze_structure import get_axis_and_mid
 from utils import Config
 
 
@@ -66,6 +67,15 @@ class Population:
                 generation += 1
             else:
                 break
+
+        for individual in individuals:
+            if len(individual.parents_id) == 2:
+                parent1_id, parent2_id = individual.parents_id
+                child_body = individual.body
+                parent1_body = individuals[parent1_id].body
+                parent2_body = individuals[parent2_id].body
+                axis, mid = get_axis_and_mid(parent1_body, parent2_body, child_body)
+                individual.crossover_info = {'axis': axis, 'mid': mid}
 
         return Population(individuals, group_hashes, generation, num_evals)
     
