@@ -22,19 +22,19 @@ class Config:
         parser.add_argument(
             '--population-size', type=int, default=25)
         parser.add_argument(
-            '--crossover_rate', default=0.5)
+            '--crossover_rate', type=float, default=0.5)
         parser.add_argument(
-            '--mutation-rate', default=0.1)
+            '--mutation-rate', type=float, default=0.1)
         parser.add_argument(
-            '--elite-rate-high', default=0.6)
+            '--elite-rate-high', type=float, default=0.6)
         parser.add_argument(
-            '--elite-rate-low', default=0.1)
+            '--elite-rate-low', type=float, default=0.1)
         parser.add_argument(
-            '--inherit-en', default=False)
+            '--inherit-en', type=bool, default=False)
         
         # PPO params
         parser.add_argument(
-            '--print-en', default=False
+            '--print-en', type=bool, default=False
         )
         parser.add_argument(
             '--algo', default='ppo', help='algorithm to use: a2c | ppo | acktr')
