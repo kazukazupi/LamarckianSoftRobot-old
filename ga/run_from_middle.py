@@ -24,8 +24,10 @@ def run_from_middle(exp_dir:str, crossover_rate:float, inherit_en:bool):
 
     # txt file to log
     log_file_path = os.path.join(Config.exp_dir, 'log.txt')
-    # TO DO: 途中で始めた際に新たなlogファイルを作る
-    print_and_save(f'restarted evolution.', log_file_path, 'w')
+    if os.path.exists(log_file_path):
+        print_and_save(f'restarted evolution.', log_file_path, 'a')
+    else:
+        print_and_save(f'restarted evolution.', log_file_path, 'w')
 
     # csv file to log fitness
     fitness_csv_path = os.path.join(Config.exp_dir, 'fitness.csv')

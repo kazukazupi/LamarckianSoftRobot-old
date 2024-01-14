@@ -327,3 +327,25 @@ class GetParamState:
         else:
             raise ValueError(f"parent_to_inherit must be in [1, 2]. now {parent_to_inherit}")
         
+
+def get_axis_and_mid(parent1_body, parent2_body, child_body):
+
+    X, Y = parent1_body.shape[0], parent2_body.shape[1]
+
+    axis = 0
+    for mid in range(1, Y):
+        child_body_candidate = np.concatenate((parent1_body[:mid], parent2_body[mid:]), axis)
+        if np.array_equal(child_body, child_body_candidate):
+            return axis, mid
+    
+    axis = 1
+    for mid in range(1, X):
+        child_body_candidate = np.concatenate((parent1_body[:,:mid], parent2_body[:,mid:]), axis)
+        if np.array_equal(child_body, child_body_candidate):
+            return axis, mid
+
+    error_message = 'cannot create child\'s body from parents\' body.\n\n'
+    error_message += f'parent1\n{parent1_body}\n\n'
+    error_message += f'parent2\n{parent2_body}\n\n'
+    error_message += f'child\n{child_body}'
+    raise ValueError(error_message)
